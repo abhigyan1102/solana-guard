@@ -9,6 +9,7 @@ use {
     solana_signer::Signer,
     solana_keypair::Keypair,
     solana_transaction::versioned::VersionedTransaction,
+    std::{fs, io::ErrorKind, path::PathBuf},
 };
 
 #[test]
@@ -17,8 +18,20 @@ fn test_register_agent() {
     let owner = Keypair::new();
     let agent = Keypair::new();
     let mut svm = LiteSVM::new();
-    let bytes = include_bytes!("../../../target/deploy/solana_guard.so");
-    svm.add_program(program_id, bytes).unwrap();
+    let program_path =
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target/deploy/solana_guard.so");
+    let bytes = match fs::read(&program_path) {
+        Ok(bytes) => bytes,
+        Err(err) if err.kind() == ErrorKind::NotFound => {
+            eprintln!(
+                "Skipping LiteSVM register_agent test because {} does not exist. Run `anchor build` to generate it.",
+                program_path.display()
+            );
+            return;
+        }
+        Err(err) => panic!("failed to read {}: {err}", program_path.display()),
+    };
+    svm.add_program(program_id, &bytes).unwrap();
     svm.airdrop(&owner.pubkey(), 10_000_000_000).unwrap();
 
     // Derive PDAs
