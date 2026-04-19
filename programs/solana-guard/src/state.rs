@@ -66,6 +66,29 @@ pub struct TransactionLog {
     pub bump: u8,
 }
 
+/// Event emitted when a transaction attempt is rejected.
+/// Failed instructions cannot persist TransactionLog accounts, so rejected
+/// attempts are exposed through transaction logs instead.
+#[event]
+pub struct TransactionRejected {
+    /// The agent that attempted this transaction
+    pub agent: Pubkey,
+    /// The owner of the agent
+    pub owner: Pubkey,
+    /// Requested amount in lamports
+    pub amount: u64,
+    /// The target program the agent attempted to interact with
+    pub target_protocol: Pubkey,
+    /// Running daily spend used for the validation
+    pub daily_spent: u64,
+    /// Configured daily limit
+    pub daily_limit: u64,
+    /// Timestamp of rejection
+    pub rejected_at: i64,
+    /// Machine-readable reason code. See constants.rs.
+    pub reason_code: u8,
+}
+
 /// Global nonce tracker per agent for transaction log indexing
 #[account]
 #[derive(InitSpace)]
