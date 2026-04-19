@@ -40,7 +40,7 @@ fn test_register_agent() {
         &program_id,
     );
     let (agent_nonce_pda, _) = Pubkey::find_program_address(
-        &[b"nonce", agent.pubkey().as_ref()],
+        &[b"nonce", owner.pubkey().as_ref(), agent.pubkey().as_ref()],
         &program_id,
     );
 
