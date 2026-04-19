@@ -13,19 +13,20 @@ pub fn handler(
     is_active: Option<bool>,
 ) -> Result<()> {
     let policy = &mut ctx.accounts.policy;
+    let new_max_spend_per_tx = max_spend_per_tx.unwrap_or(policy.max_spend_per_tx);
+    let new_daily_limit = daily_limit.unwrap_or(policy.daily_limit);
 
-    if let Some(max_per_tx) = max_spend_per_tx {
-        require!(max_per_tx > 0, SolanaGuardError::InvalidSpendingLimit);
-        policy.max_spend_per_tx = max_per_tx;
-    }
+    require!(
+        new_max_spend_per_tx > 0,
+        SolanaGuardError::InvalidSpendingLimit
+    );
+    require!(
+        new_daily_limit >= new_max_spend_per_tx,
+        SolanaGuardError::InvalidDailyLimit
+    );
 
-    if let Some(daily) = daily_limit {
-        require!(
-            daily >= policy.max_spend_per_tx,
-            SolanaGuardError::InvalidDailyLimit
-        );
-        policy.daily_limit = daily;
-    }
+    policy.max_spend_per_tx = new_max_spend_per_tx;
+    policy.daily_limit = new_daily_limit;
 
     if let Some(protocols) = allowed_protocols {
         require!(
