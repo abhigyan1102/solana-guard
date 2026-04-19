@@ -15,6 +15,7 @@ pub fn handler(ctx: Context<RegisterAgent>) -> Result<()> {
     agent_config.registered_at = clock.unix_timestamp;
     agent_config.bump = ctx.bumps.agent_config;
 
+    agent_nonce.owner = ctx.accounts.owner.key();
     agent_nonce.agent = ctx.accounts.agent.key();
     agent_nonce.nonce = 0;
     agent_nonce.bump = ctx.bumps.agent_nonce;
@@ -53,7 +54,7 @@ pub struct RegisterAgent<'info> {
         init,
         payer = owner,
         space = 8 + AgentNonce::INIT_SPACE,
-        seeds = [NONCE_SEED, agent.key().as_ref()],
+        seeds = [NONCE_SEED, owner.key().as_ref(), agent.key().as_ref()],
         bump,
     )]
     pub agent_nonce: Account<'info, AgentNonce>,
