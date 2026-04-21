@@ -23,39 +23,91 @@ pub fn handler(
     let tx_log = &mut ctx.accounts.tx_log;
     let agent_nonce = &mut ctx.accounts.agent_nonce;
     let clock = Clock::get()?;
+    let now = clock.unix_timestamp;
 
     // ---- Check 1: Agent must be active ----
-    require!(agent_config.is_active, SolanaGuardError::AgentNotActive);
+    if !agent_config.is_active {
+        emit_rejection(
+            agent_config,
+            policy,
+            amount,
+            target_protocol,
+            policy.daily_spent,
+            now,
+            REJECTION_AGENT_NOT_ACTIVE,
+        );
+        return err!(SolanaGuardError::AgentNotActive);
+    }
 
     // ---- Check 2: Policy must be active ----
-    require!(policy.is_active, SolanaGuardError::PolicyNotActive);
+    if !policy.is_active {
+        emit_rejection(
+            agent_config,
+            policy,
+            amount,
+            target_protocol,
+            policy.daily_spent,
+            now,
+            REJECTION_POLICY_NOT_ACTIVE,
+        );
+        return err!(SolanaGuardError::PolicyNotActive);
+    }
 
     // ---- Check 3: Per-transaction limit ----
-    require!(
-        amount <= policy.max_spend_per_tx,
-        SolanaGuardError::ExceedsPerTxLimit
-    );
+    if amount > policy.max_spend_per_tx {
+        emit_rejection(
+            agent_config,
+            policy,
+            amount,
+            target_protocol,
+            policy.daily_spent,
+            now,
+            REJECTION_EXCEEDS_PER_TX_LIMIT,
+        );
+        return err!(SolanaGuardError::ExceedsPerTxLimit);
+    }
 
     // ---- Check 4: Daily limit (with 24h reset) ----
-    let now = clock.unix_timestamp;
-    if now - policy.day_start >= SECONDS_PER_DAY {
+    let should_reset_day = now - policy.day_start >= SECONDS_PER_DAY;
+    let current_daily_spent = if should_reset_day {
+        0
+    } else {
+        policy.daily_spent
+    };
+
+    if current_daily_spent.checked_add(amount).unwrap_or(u64::MAX) > policy.daily_limit {
+        emit_rejection(
+            agent_config,
+            policy,
+            amount,
+            target_protocol,
+            current_daily_spent,
+            now,
+            REJECTION_EXCEEDS_DAILY_LIMIT,
+        );
+        return err!(SolanaGuardError::ExceedsDailyLimit);
+    }
+
+    // ---- Check 5: Protocol allowlist ----
+    if !policy.allowed_protocols.contains(&target_protocol) {
+        emit_rejection(
+            agent_config,
+            policy,
+            amount,
+            target_protocol,
+            current_daily_spent,
+            now,
+            REJECTION_PROTOCOL_NOT_ALLOWED,
+        );
+        return err!(SolanaGuardError::ProtocolNotAllowed);
+    }
+
+    // ---- All checks passed — update state ----
+    if should_reset_day {
         // Reset the daily counter — new day
         policy.daily_spent = 0;
         policy.day_start = now;
     }
-
-    require!(
-        policy.daily_spent.checked_add(amount).unwrap_or(u64::MAX) <= policy.daily_limit,
-        SolanaGuardError::ExceedsDailyLimit
-    );
-
-    // ---- Check 5: Protocol allowlist ----
-    require!(
-        policy.allowed_protocols.contains(&target_protocol),
-        SolanaGuardError::ProtocolNotAllowed
-    );
-
-    // ---- All checks passed — update state ----
     policy.daily_spent = policy.daily_spent.checked_add(amount).unwrap();
 
     // Write transaction log
@@ -81,6 +133,27 @@ pub fn handler(
     );
 
     Ok(())
+}
+
+fn emit_rejection(
+    agent_config: &AgentConfig,
+    policy: &Policy,
+    amount: u64,
+    target_protocol: Pubkey,
+    daily_spent: u64,
+    rejected_at: i64,
+    reason_code: u8,
+) {
+    emit!(TransactionRejected {
+        agent: agent_config.agent,
+        owner: agent_config.owner,
+        amount,
+        target_protocol,
+        daily_spent,
+        daily_limit: policy.daily_limit,
+        rejected_at,
+        reason_code,
+    });
 }
 
 #[derive(Accounts)]
