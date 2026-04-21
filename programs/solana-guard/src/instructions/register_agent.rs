@@ -1,12 +1,13 @@
-use anchor_lang::prelude::*;
-use crate::state::*;
 use crate::constants::*;
+use crate::state::*;
+use anchor_lang::prelude::*;
 
 /// Registers a new AI agent under the caller's ownership.
 /// Creates an AgentConfig PDA and an AgentNonce tracker.
 pub fn handler(ctx: Context<RegisterAgent>) -> Result<()> {
     let agent_config = &mut ctx.accounts.agent_config;
     let agent_nonce = &mut ctx.accounts.agent_nonce;
+    let vault = &mut ctx.accounts.vault;
     let clock = Clock::get()?;
 
     agent_config.owner = ctx.accounts.owner.key();
@@ -20,10 +21,15 @@ pub fn handler(ctx: Context<RegisterAgent>) -> Result<()> {
     agent_nonce.nonce = 0;
     agent_nonce.bump = ctx.bumps.agent_nonce;
 
+    vault.owner = ctx.accounts.owner.key();
+    vault.agent = ctx.accounts.agent.key();
+    vault.bump = ctx.bumps.vault;
+
     msg!(
-        "SolanaGuard: Agent {} registered by owner {}",
+        "SolanaGuard: Agent {} registered by owner {} with guarded vault {}",
         ctx.accounts.agent.key(),
-        ctx.accounts.owner.key()
+        ctx.accounts.owner.key(),
+        ctx.accounts.vault.key()
     );
 
     Ok(())
@@ -58,6 +64,16 @@ pub struct RegisterAgent<'info> {
         bump,
     )]
     pub agent_nonce: Account<'info, AgentNonce>,
+
+    /// PDA storing funds that can only be spent through guardrail checks
+    #[account(
+        init,
+        payer = owner,
+        space = 8 + Vault::INIT_SPACE,
+        seeds = [VAULT_SEED, owner.key().as_ref(), agent.key().as_ref()],
+        bump,
+    )]
+    pub vault: Account<'info, Vault>,
 
     pub system_program: Program<'info, System>,
 }

@@ -31,10 +31,16 @@ pub struct Policy {
     pub max_spend_per_tx: u64,
     /// Maximum SOL (in lamports) the agent can spend per day
     pub daily_limit: u64,
+    /// Maximum number of approved transactions per day
+    pub max_tx_per_day: u64,
     /// Running total of SOL spent in the current day
     pub daily_spent: u64,
+    /// Number of approved transactions in the current day
+    pub tx_count_today: u64,
     /// Unix timestamp of the current spending day (resets every 24h)
     pub day_start: i64,
+    /// Maximum permitted slippage in basis points
+    pub slippage_bps: u16,
     /// Whether the policy is active (owner can pause)
     pub is_active: bool,
     /// List of program IDs the agent is allowed to interact with
@@ -54,12 +60,16 @@ pub struct TransactionLog {
     pub owner: Pubkey,
     /// Amount in lamports
     pub amount: u64,
+    /// Slippage reported for this attempted action, in basis points
+    pub slippage_bps: u16,
     /// The target program the agent interacted with
     pub target_protocol: Pubkey,
     /// Timestamp of execution
     pub executed_at: i64,
     /// Whether the transaction was approved or rejected
     pub was_approved: bool,
+    /// Machine-readable reason code. Zero means approved.
+    pub reason_code: u8,
     /// Sequential nonce for uniqueness
     pub nonce: u64,
     /// Bump seed
@@ -77,10 +87,14 @@ pub struct TransactionRejected {
     pub owner: Pubkey,
     /// Requested amount in lamports
     pub amount: u64,
+    /// Slippage reported for the attempted action, in basis points
+    pub slippage_bps: u16,
     /// The target program the agent attempted to interact with
     pub target_protocol: Pubkey,
     /// Running daily spend used for the validation
     pub daily_spent: u64,
+    /// Running transaction count used for the validation
+    pub tx_count_today: u64,
     /// Configured daily limit
     pub daily_limit: u64,
     /// Timestamp of rejection
@@ -96,5 +110,17 @@ pub struct AgentNonce {
     pub owner: Pubkey,
     pub agent: Pubkey,
     pub nonce: u64,
+    pub bump: u8,
+}
+
+/// Program-controlled SOL vault used for deterministic guarded execution
+#[account]
+#[derive(InitSpace)]
+pub struct Vault {
+    /// Owner that can fund or withdraw this vault
+    pub owner: Pubkey,
+    /// Agent authorized to spend through guardrails
+    pub agent: Pubkey,
+    /// PDA bump
     pub bump: u8,
 }

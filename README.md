@@ -12,34 +12,41 @@ AI agents are getting access to user wallets, but there's no on-chain mechanism 
 
 ## The Solution
 
-SolanaGuard is a Solana smart contract (built with Anchor/Rust) that acts as a **deterministic firewall** between AI agents and your funds. Users register an agent, set policies (max spend per tx, daily limit, allowed protocols), and the contract enforces these rules on every transaction.
+SolanaGuard is a Solana smart contract (built with Anchor/Rust) that acts as a **deterministic firewall** between AI agents and your funds. Users register an agent, fund a program-controlled vault, set policies (max spend per tx, daily limit, daily tx cap, allowed protocols, and slippage limit), and the contract enforces these rules while executing each guarded transfer from the vault itself.
 
 **No agent, no backend, and no developer can override them — enforcement happens at the blockchain level.**
 
 ## Features
 
 - 🔐 **Agent Registration** — Bind AI agents to your wallet with PDA-based identity
+- 🏦 **Program Vault** — Funds live in a PDA-controlled vault instead of an agent wallet
 - 📊 **Per-Transaction Limits** — Cap the maximum any single transaction can spend
 - 📅 **Daily Spending Limits** — Automatic 24-hour rolling reset
+- 🔢 **Daily Transaction Caps** — Limit how many approved actions an agent can take per day
 - ✅ **Protocol Allowlisting** — Whitelist only the programs your agent can interact with
+- 📉 **Slippage Limits** — Reject actions when reported slippage exceeds policy
 - 🚨 **Emergency Kill Switch** — Instantly pause any agent with one transaction
-- 📝 **On-chain Audit Trail** — Every transaction logged as a PDA for full transparency
+- 📝 **On-chain Audit Trail** — Every attempt is recorded as a PDA log; rejected attempts also emit events
 - 🔄 **Partial Policy Updates** — Modify individual policy fields without resetting everything
+
+Policy denials are recorded as successful on-chain audit entries with `was_approved = false` and a rejection reason code. This preserves a durable audit trail without moving funds from the guarded vault.
 
 ## Architecture
 
 ```
 ┌─────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   AI Agent   │────▶│   SolanaGuard    │────▶│  Target Protocol│
+│   AI Agent   │────▶│   SolanaGuard    │────▶│  Target Account │
 │  (e.g. GPT)  │     │  Smart Contract  │     │  (e.g. Jupiter) │
 └─────────────┘     │                  │     └─────────────────┘
                     │  ✓ Agent active? │
                     │  ✓ Under tx max? │
                     │  ✓ Under daily?  │
+                    │  ✓ Under tx/day? │
                     │  ✓ Protocol OK?  │
+                    │  ✓ Slippage OK?  │
                     │                  │
                     │  ❌ REJECT or    │
-                    │  ✅ APPROVE      │
+                    │  ✅ EXECUTE      │
                     └──────────────────┘
 ```
 
@@ -48,10 +55,12 @@ SolanaGuard is a Solana smart contract (built with Anchor/Rust) that acts as a *
 | Instruction | Who Calls | Description |
 |---|---|---|
 | `register_agent` | Owner | Register an AI agent under your ownership |
-| `set_policy` | Owner | Define spending limits and allowed protocols |
-| `validate_and_execute` | Agent | Check transaction against policy before executing |
+| `fund_vault` | Owner | Deposit SOL into the guarded vault |
+| `set_policy` | Owner | Define spending, tx-count, protocol, and slippage limits |
+| `validate_and_execute` | Agent | Enforce policy and execute the guarded transfer from the vault |
 | `toggle_agent` | Owner | Pause/unpause an agent (kill switch) |
 | `update_policy` | Owner | Partially update policy parameters |
+| `withdraw_vault` | Owner | Withdraw unused SOL back from the vault |
 
 ## Quick Start
 

@@ -1,7 +1,7 @@
-use anchor_lang::prelude::*;
-use crate::state::*;
-use crate::error::SolanaGuardError;
 use crate::constants::*;
+use crate::error::SolanaGuardError;
+use crate::state::*;
+use anchor_lang::prelude::*;
 
 /// Toggles an agent's active status (pause/unpause).
 /// Only the owner can call this.
