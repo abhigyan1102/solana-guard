@@ -78,15 +78,25 @@ Policy denials are recorded as successful on-chain audit entries with `was_appro
 git clone https://github.com/YOUR_USERNAME/solana-guard.git
 cd solana-guard
 
-# Build
-anchor build
+# Sync the local program id with the checked-in keypair
+yarn keys:sync
 
-# Test
-anchor test
+# Build the Solana program
+yarn build:program
+
+# Run host-side tests
+yarn test:host
 
 # Deploy to devnet
-anchor deploy --provider.cluster devnet
+yarn deploy:devnet
 ```
+
+### Notes
+
+- The default runnable path uses `cargo build-sbf` and `solana program deploy`, which avoids Anchor CLI/toolchain mismatches on machines where `anchor build` is not wired to the installed Solana platform tools.
+- `yarn build:program` performs a preflight check and will ask you to upgrade Solana platform-tools if your local `cargo build-sbf` is too old for this dependency set.
+- The checked-in program id is synced to `target/deploy/solana_guard-keypair.json`. If you regenerate the keypair, run `yarn keys:sync` before building or deploying.
+- The LiteSVM integration tests are opt-in behind the `sbf-tests` feature because they require a fresh SBF artifact and a tightly matched Solana test-toolchain stack.
 
 ## Tech Stack
 

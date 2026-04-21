@@ -1,3 +1,5 @@
+#![cfg(feature = "sbf-tests")]
+
 use {
     anchor_lang::{
         solana_program::instruction::Instruction, solana_program::pubkey::Pubkey,

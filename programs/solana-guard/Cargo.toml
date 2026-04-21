@@ -5,7 +5,7 @@ description = "Created with Anchor"
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib", "lib"]
+crate-type = ["cdylib", "rlib"]
 name = "solana_guard"
 
 [features]
@@ -18,18 +18,11 @@ idl-build = ["anchor-lang/idl-build"]
 anchor-debug = []
 custom-heap = []
 custom-panic = []
+sbf-tests = []
 
 
 [dependencies]
-anchor-lang = { version = "1.0.0", features = ["init-if-needed"] }
-
-[dev-dependencies]
-litesvm = "0.10.0"
-solana-message = "3.0.1"
-solana-transaction = "3.0.2"
-solana-signer = "3.0.0"
-solana-keypair = "3.0.1"
-
+anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

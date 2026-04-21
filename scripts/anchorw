@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Anchor shells out to `cargo +<toolchain> ...` for sbpf builds. On machines
+# where Homebrew's cargo shadows rustup's shim, that syntax fails. Force the
+# rustup-managed cargo/rustc binaries to the front of PATH for Anchor commands.
+export PATH="$HOME/.cargo/bin:$PATH"
+
+exec anchor "$@"

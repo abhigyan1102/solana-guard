@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+export PATH="$HOME/.cargo/bin:$PATH"
+
+version_output="$(cargo build-sbf --version 2>/dev/null || true)"
+
+if [[ "$version_output" != *"platform-tools v1.52"* ]] && [[ "$version_output" != *"platform-tools v1.53"* ]] && [[ "$version_output" != *"platform-tools v1.54"* ]]; then
+  cat <<'EOF' >&2
+SolanaGuard requires Solana platform-tools v1.52 or newer to build this program.
+
+Your local `cargo build-sbf` is older, which causes dependency-resolution failures
+inside the SBPF toolchain.
+
+Recommended fix:
+  1. Upgrade your Solana / Agave toolchain so `cargo build-sbf --version`
+     reports platform-tools v1.52+.
+  2. Re-run `yarn build:program`.
+
+Current version:
+EOF
+  echo "  ${version_output:-unavailable}" >&2
+  exit 1
+fi
+
+exec cargo build-sbf --manifest-path programs/solana-guard/Cargo.toml --sbf-out-dir target/deploy -- --locked

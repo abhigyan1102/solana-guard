@@ -1,5 +1,3 @@
-use anchor_lang::prelude::*;
-
 /// PDA seeds
 pub const AGENT_SEED: &[u8] = b"agent";
 pub const POLICY_SEED: &[u8] = b"policy";

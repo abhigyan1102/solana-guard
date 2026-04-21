@@ -8,7 +8,7 @@ pub fn handler(ctx: Context<FundVault>, amount: u64) -> Result<()> {
         from: ctx.accounts.owner.to_account_info(),
         to: ctx.accounts.vault.to_account_info(),
     };
-    let cpi_ctx = CpiContext::new(ctx.accounts.system_program.key(), cpi_accounts);
+    let cpi_ctx = CpiContext::new(ctx.accounts.system_program.to_account_info(), cpi_accounts);
     system_program::transfer(cpi_ctx, amount)?;
 
     msg!(
