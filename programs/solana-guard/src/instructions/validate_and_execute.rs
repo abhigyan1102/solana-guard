@@ -187,7 +187,12 @@ pub struct ValidateAndExecute<'info> {
         init,
         payer = agent,
         space = 8 + TransactionLog::INIT_SPACE,
-        seeds = [TX_LOG_SEED, agent.key().as_ref(), &agent_nonce.nonce.to_le_bytes()],
+        seeds = [
+            TX_LOG_SEED,
+            owner.key().as_ref(),
+            agent.key().as_ref(),
+            &agent_nonce.nonce.to_le_bytes(),
+        ],
         bump,
     )]
     pub tx_log: Account<'info, TransactionLog>,
@@ -195,8 +200,10 @@ pub struct ValidateAndExecute<'info> {
     /// Nonce tracker for the agent
     #[account(
         mut,
-        seeds = [NONCE_SEED, agent.key().as_ref()],
+        seeds = [NONCE_SEED, owner.key().as_ref(), agent.key().as_ref()],
         bump = agent_nonce.bump,
+        constraint = agent_nonce.owner == owner.key() @ SolanaGuardError::UnauthorizedOwner,
+        constraint = agent_nonce.agent == agent.key() @ SolanaGuardError::UnauthorizedAgent,
     )]
     pub agent_nonce: Account<'info, AgentNonce>,
 

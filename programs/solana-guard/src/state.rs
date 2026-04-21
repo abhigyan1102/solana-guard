@@ -89,10 +89,11 @@ pub struct TransactionRejected {
     pub reason_code: u8,
 }
 
-/// Global nonce tracker per agent for transaction log indexing
+/// Nonce tracker per owner/agent pair for transaction log indexing
 #[account]
 #[derive(InitSpace)]
 pub struct AgentNonce {
+    pub owner: Pubkey,
     pub agent: Pubkey,
     pub nonce: u64,
     pub bump: u8,
