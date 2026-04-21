@@ -8,8 +8,11 @@ skip-lint = false
 [programs.localnet]
 solana_guard = "FRuK1VzhqjybBMhp8UGVipJ9jkyuT9Dy7YJHAREwSApw"
 
+[programs.devnet]
+solana_guard = "FRuK1VzhqjybBMhp8UGVipJ9jkyuT9Dy7YJHAREwSApw"
+
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
