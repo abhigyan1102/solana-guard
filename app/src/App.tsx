@@ -18,9 +18,10 @@ const App: FC = () => {
     () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
     []
   );
+  const connectionConfig = useMemo(() => ({ commitment: 'confirmed' as const }), []);
 
   return (
-    <ConnectionProvider endpoint={endpoint}>
+    <ConnectionProvider endpoint={endpoint} config={connectionConfig}>
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
           <Dashboard />

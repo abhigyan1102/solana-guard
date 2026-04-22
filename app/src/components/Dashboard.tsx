@@ -40,7 +40,11 @@ const Dashboard: React.FC = () => {
 
   const getProgram = useCallback(() => {
     if (!wallet.publicKey) return null;
-    const provider = new AnchorProvider(connection, wallet as any, { commitment: 'confirmed' });
+    const provider = new AnchorProvider(connection, wallet as any, {
+      commitment: 'confirmed',
+      preflightCommitment: 'confirmed',
+      skipPreflight: true,
+    });
     return new Program(idl as any, provider);
   }, [connection, wallet]);
 
@@ -79,7 +83,7 @@ const Dashboard: React.FC = () => {
       await program.methods.registerAgent().accounts({
         owner: wallet.publicKey, agent: agentPk,
         agentConfig: agentConfigPda, agentNonce: agentNoncePda,
-      }).rpc();
+      }).rpc({ skipPreflight: true, commitment: 'confirmed' });
 
       showToast('Agent registered successfully!', 'success');
       await fetchAgents();
@@ -105,7 +109,7 @@ const Dashboard: React.FC = () => {
 
       await program.methods.setPolicy(maxLamports, dailyLamports, protoList).accounts({
         owner: wallet.publicKey, agentConfig: agentConfigPda, policy: policyPda,
-      }).rpc();
+      }).rpc({ skipPreflight: true, commitment: 'confirmed' });
 
       showToast('Policy set successfully!', 'success');
     } catch (e: any) {
@@ -123,7 +127,7 @@ const Dashboard: React.FC = () => {
       const [agentConfigPda] = getPda([AGENT_SEED, wallet.publicKey.toBuffer(), agentPk.toBuffer()], PROGRAM_ID);
       await program.methods.toggleAgent(!active).accounts({
         owner: wallet.publicKey, agentConfig: agentConfigPda,
-      }).rpc();
+      }).rpc({ skipPreflight: true, commitment: 'confirmed' });
       showToast(active ? 'Agent PAUSED' : 'Agent RESUMED', active ? 'error' : 'success');
       await fetchAgents();
     } catch (e: any) {
