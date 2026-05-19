@@ -64,3 +64,4 @@ fn test_register_agent() {
     let res = svm.send_transaction(tx);
     assert!(res.is_ok(), "register_agent failed: {:?}", res.err());
 }
+// alright everything fine here
